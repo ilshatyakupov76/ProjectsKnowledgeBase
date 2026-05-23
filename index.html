@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>База знаний проектов интегратора</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Навигация">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">KB</div>
+        <div>
+          <h1>База знаний</h1>
+          <p>Проекты системного интегратора</p>
+        </div>
+      </div>
+
+      <nav class="nav-tabs" aria-label="Разделы приложения">
+        <button class="nav-tab active" type="button" data-tab="search">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="m21 21-4.4-4.4"/><circle cx="11" cy="11" r="7"/></svg>
+          </span>
+          Поиск
+        </button>
+        <button class="nav-tab" type="button" data-tab="projects">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5-9 4.5L3 7.5Z"/><path d="M3 12.5 12 17l9-4.5"/><path d="M3 17.5 12 22l9-4.5"/></svg>
+          </span>
+          Проекты
+        </button>
+        <button class="nav-tab" type="button" data-tab="add">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+          </span>
+          Добавить
+        </button>
+      </nav>
+
+      <div class="side-panel">
+        <div class="metric">
+          <span>Проектов</span>
+          <strong id="projectCount">0</strong>
+        </div>
+        <div class="metric">
+          <span>Функциональностей</span>
+          <strong id="featureCount">0</strong>
+        </div>
+        <div class="metric">
+          <span>Средние трудозатраты</span>
+          <strong id="avgHours">0 ч</strong>
+        </div>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <section class="tab-panel active" id="searchPanel" data-panel="search">
+        <header class="topbar">
+          <div>
+            <h2>Поиск по реализованной функциональности</h2>
+            <p>Введите примерное название, например: интеграция с бухгалтерией, отчеты колл-центра, учет времени операторов.</p>
+          </div>
+          <div class="topbar-actions">
+            <button class="icon-button" type="button" id="exportBtn" title="Экспортировать базу в JSON" aria-label="Экспортировать базу в JSON">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+            </button>
+            <label class="icon-button file-button" title="Импортировать JSON" aria-label="Импортировать JSON">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V9"/><path d="m17 14-5-5-5 5"/><path d="M5 3h14"/></svg>
+              <input type="file" id="importInput" accept="application/json">
+            </label>
+            <button class="icon-button danger-soft" type="button" id="resetBtn" title="Вернуть демо-данные" aria-label="Вернуть демо-данные">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <div class="search-card">
+          <div class="search-row">
+            <label class="search-field" for="searchInput">
+              <span class="field-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="m21 21-4.4-4.4"/><circle cx="11" cy="11" r="7"/></svg>
+              </span>
+              <input id="searchInput" type="search" placeholder="Название функциональности" autocomplete="off">
+            </label>
+            <button class="primary-button" type="button" id="searchBtn">
+              <span class="icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="m21 21-4.4-4.4"/><circle cx="11" cy="11" r="7"/></svg>
+              </span>
+              Найти
+            </button>
+          </div>
+
+          <div class="filters" aria-label="Фильтры результатов">
+            <label>
+              Отрасль
+              <select id="industryFilter"></select>
+            </label>
+            <label>
+              Платформа
+              <select id="platformFilter"></select>
+            </label>
+            <label>
+              Продукт
+              <select id="productFilter"></select>
+            </label>
+            <label>
+              Стек
+              <select id="stackFilter"></select>
+            </label>
+            <label>
+              Минимальная похожесть
+              <input id="scoreFilter" type="range" min="0" max="80" value="18" step="1">
+              <span id="scoreValue">18%</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="results-tools">
+          <div>
+            <strong id="resultCount">0 совпадений</strong>
+            <span id="queryHint">Показаны все функциональности. Для точного списка введите запрос.</span>
+          </div>
+          <div class="segmented" role="group" aria-label="Сортировка">
+            <button type="button" class="segment active" data-sort="score">Похожесть</button>
+            <button type="button" class="segment" data-sort="total">Трудозатраты</button>
+            <button type="button" class="segment" data-sort="project">Проект</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Проект</th>
+                <th>Отрасль</th>
+                <th>Платформа</th>
+                <th>Продукт</th>
+                <th>Функциональность</th>
+                <th>Аналитика</th>
+                <th>Разработка</th>
+                <th>Тестирование</th>
+                <th>Всего</th>
+                <th>Стек</th>
+                <th>Похожесть</th>
+              </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+          </table>
+          <div class="empty-state" id="emptyState" hidden>
+            <strong>Совпадений не найдено</strong>
+            <span>Попробуйте другое название функциональности или снизьте порог похожести.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="projectsPanel" data-panel="projects">
+        <header class="topbar">
+          <div>
+            <h2>Проекты и реализованная функциональность</h2>
+            <p>Сводный список записей в базе знаний.</p>
+          </div>
+        </header>
+        <div id="projectsList" class="project-list"></div>
+      </section>
+
+      <section class="tab-panel" id="addPanel" data-panel="add">
+        <header class="topbar">
+          <div>
+            <h2>Добавить проект</h2>
+            <p>Новая запись сохраняется в браузере и сразу участвует в поиске.</p>
+          </div>
+        </header>
+
+        <form id="projectForm" class="entry-form">
+          <div class="form-grid">
+            <label>
+              Название проекта
+              <input name="projectName" required placeholder="Например: ServiceDesk для фармацевтической сети">
+            </label>
+            <label>
+              Отрасль
+              <input name="industry" required placeholder="Фармацевтика">
+            </label>
+            <label>
+              Платформа
+              <input name="platform" required placeholder="ELMA">
+            </label>
+            <label>
+              Продукт платформы
+              <input name="product" required placeholder="ServiceDesk">
+            </label>
+          </div>
+
+          <div class="feature-editor">
+            <div class="section-heading">
+              <h3>Функциональность</h3>
+              <button class="secondary-button" type="button" id="addFeatureBtn">
+                <span class="icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                </span>
+                Добавить строку
+              </button>
+            </div>
+            <div id="featureRows"></div>
+          </div>
+
+          <div class="form-actions">
+            <button class="primary-button" type="submit">
+              <span class="icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+              </span>
+              Сохранить
+            </button>
+            <button class="secondary-button" type="reset">Очистить</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <template id="featureRowTemplate">
+    <div class="feature-row">
+      <label class="wide">
+        Название
+        <input name="featureName" required placeholder="Интеграция с бухгалтерской системой">
+      </label>
+      <label>
+        Аналитика, ч
+        <input name="analysisHours" required min="0" step="1" type="number" value="16">
+      </label>
+      <label>
+        Разработка, ч
+        <input name="developmentHours" required min="0" step="1" type="number" value="40">
+      </label>
+      <label>
+        Тестирование, ч
+        <input name="testingHours" required min="0" step="1" type="number" value="12">
+      </label>
+      <label>
+        Стек
+        <input name="stack" required placeholder="JavaScript, REST API">
+      </label>
+      <button class="icon-button remove-feature" type="button" title="Удалить строку" aria-label="Удалить строку">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+      </button>
+    </div>
+  </template>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
