@@ -59,7 +59,7 @@
         <header class="topbar">
           <div>
             <h2>Поиск по реализованной функциональности</h2>
-            <p>Введите примерное название, например: интеграция с бухгалтерией, отчеты колл-центра, учет времени операторов.</p>
+            <p>Введите примерное название функциональности или заказчика, например: интеграция с бухгалтерией, Газпромнефть, учет времени операторов.</p>
           </div>
           <div class="topbar-actions">
             <button class="icon-button" type="button" id="exportBtn" title="Экспортировать базу в JSON" aria-label="Экспортировать базу в JSON">
@@ -81,7 +81,7 @@
               <span class="field-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="m21 21-4.4-4.4"/><circle cx="11" cy="11" r="7"/></svg>
               </span>
-              <input id="searchInput" type="search" placeholder="Название функциональности" autocomplete="off">
+              <input id="searchInput" type="search" placeholder="Функциональность или заказчик" autocomplete="off">
             </label>
             <button class="primary-button" type="button" id="searchBtn">
               <span class="icon" aria-hidden="true">
@@ -92,6 +92,10 @@
           </div>
 
           <div class="filters" aria-label="Фильтры результатов">
+            <label>
+              Заказчик
+              <select id="clientFilter"></select>
+            </label>
             <label>
               Отрасль
               <select id="industryFilter"></select>
@@ -133,6 +137,7 @@
             <thead>
               <tr>
                 <th>Проект</th>
+                <th>Заказчик</th>
                 <th>Отрасль</th>
                 <th>Платформа</th>
                 <th>Продукт</th>
@@ -177,6 +182,10 @@
             <label>
               Название проекта
               <input name="projectName" required placeholder="Например: ServiceDesk для фармацевтической сети">
+            </label>
+            <label>
+              Заказчик
+              <input name="client" required placeholder="Газпромнефть">
             </label>
             <label>
               Отрасль

@@ -312,7 +312,7 @@ select:focus {
 
 .filters {
   display: grid;
-  grid-template-columns: repeat(5, minmax(145px, 1fr));
+  grid-template-columns: repeat(6, minmax(135px, 1fr));
   gap: 12px;
   margin-top: 14px;
 }
@@ -397,7 +397,7 @@ input[type="range"] {
 
 table {
   width: 100%;
-  min-width: 1180px;
+  min-width: 1260px;
   border-collapse: collapse;
 }
 
@@ -569,7 +569,7 @@ mark {
 }
 
 .form-grid {
-  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
 }
 
 .feature-editor {
