@@ -4,6 +4,7 @@ const seedProjects = [
   {
     id: "pharma-servicedesk",
     name: "ServiceDesk для фармацевтической сети",
+    client: "Ламода",
     industry: "Фармацевтика",
     platform: "ELMA",
     product: "ServiceDesk",
@@ -34,6 +35,7 @@ const seedProjects = [
   {
     id: "construction-crm",
     name: "CRM для строительного холдинга",
+    client: "Технониколь",
     industry: "Строительство",
     platform: "Bitrix24",
     product: "CRM",
@@ -64,6 +66,7 @@ const seedProjects = [
   {
     id: "refinery-call-center",
     name: "Колл-центр для нефтеперерабатывающего предприятия",
+    client: "Газпромнефть",
     industry: "Нефтепереработка",
     platform: "BPMSoft",
     product: "Колл-центр",
@@ -94,6 +97,7 @@ const seedProjects = [
   {
     id: "bank-bpm",
     name: "Автоматизация клиентских процессов банка",
+    client: "Газпромнефть",
     industry: "Финансовые услуги",
     platform: "ELMA",
     product: "BPM",
@@ -124,6 +128,7 @@ const seedProjects = [
   {
     id: "retail-helpdesk",
     name: "HelpDesk для розничной сети",
+    client: "Ламода",
     industry: "Ритейл",
     platform: "Bitrix24",
     product: "ServiceDesk",
@@ -164,6 +169,7 @@ const elements = {
   avgHours: document.querySelector("#avgHours"),
   searchInput: document.querySelector("#searchInput"),
   searchBtn: document.querySelector("#searchBtn"),
+  clientFilter: document.querySelector("#clientFilter"),
   industryFilter: document.querySelector("#industryFilter"),
   platformFilter: document.querySelector("#platformFilter"),
   productFilter: document.querySelector("#productFilter"),
@@ -233,6 +239,7 @@ function getFeatureRows() {
     project.features.map((feature) => ({
       projectId: project.id,
       projectName: project.name,
+      client: project.client || "Не указан",
       industry: project.industry,
       platform: project.platform,
       product: project.product,
@@ -244,7 +251,7 @@ function getFeatureRows() {
 
 function scoreFeature(query, feature) {
   const queryTokens = tokenize(query);
-  const haystack = normalize(`${feature.name} ${feature.projectName} ${feature.industry} ${feature.platform} ${feature.product} ${feature.stack}`);
+  const haystack = normalize(`${feature.name} ${feature.projectName} ${feature.client} ${feature.industry} ${feature.platform} ${feature.product} ${feature.stack}`);
   const featureName = normalize(feature.name);
 
   if (queryTokens.length === 0) {
@@ -307,6 +314,7 @@ function fillSelect(select, values, label) {
 
 function updateFilters() {
   const rows = getFeatureRows();
+  fillSelect(elements.clientFilter, uniqueValues(rows, "client"), "Все заказчики");
   fillSelect(elements.industryFilter, uniqueValues(rows, "industry"), "Все отрасли");
   fillSelect(elements.platformFilter, uniqueValues(rows, "platform"), "Все платформы");
   fillSelect(elements.productFilter, uniqueValues(rows, "product"), "Все продукты");
@@ -319,6 +327,7 @@ function getFilteredRows() {
 
   return getFeatureRows()
     .map((row) => ({ ...row, score: scoreFeature(query, row) }))
+    .filter((row) => !elements.clientFilter.value || row.client === elements.clientFilter.value)
     .filter((row) => !elements.industryFilter.value || row.industry === elements.industryFilter.value)
     .filter((row) => !elements.platformFilter.value || row.platform === elements.platformFilter.value)
     .filter((row) => !elements.productFilter.value || row.product === elements.productFilter.value)
@@ -355,6 +364,7 @@ function renderResults() {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td><strong>${escapeHtml(row.projectName)}</strong></td>
+      <td>${escapeHtml(row.client)}</td>
       <td>${escapeHtml(row.industry)}</td>
       <td>${escapeHtml(row.platform)}</td>
       <td>${escapeHtml(row.product)}</td>
@@ -437,6 +447,7 @@ function renderProjects() {
         <div>
           <h3>${escapeHtml(project.name)}</h3>
           <div class="project-meta">
+            <span class="tag">${escapeHtml(project.client || "Не указан")}</span>
             <span class="tag">${escapeHtml(project.industry)}</span>
             <span class="tag">${escapeHtml(project.platform)}</span>
             <span class="tag">${escapeHtml(project.product)}</span>
@@ -506,6 +517,7 @@ function handleSubmit(event) {
   const newProject = {
     id: window.crypto?.randomUUID ? window.crypto.randomUUID() : `project-${Date.now()}`,
     name: formData.get("projectName").trim(),
+    client: formData.get("client").trim(),
     industry: formData.get("industry").trim(),
     platform: formData.get("platform").trim(),
     product: formData.get("product").trim(),
@@ -574,6 +586,7 @@ function normalizeProject(project, index) {
   return {
     id: project.id || `project-${Date.now()}-${index}`,
     name: String(project.name),
+    client: String(project.client || "Не указан"),
     industry: String(project.industry),
     platform: String(project.platform),
     product: String(project.product),
@@ -637,6 +650,7 @@ function attachEvents() {
   });
 
   [
+    elements.clientFilter,
     elements.industryFilter,
     elements.platformFilter,
     elements.productFilter,
