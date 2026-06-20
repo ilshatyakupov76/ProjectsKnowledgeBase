@@ -1,164 +1,6 @@
-const STORAGE_KEY = "integrator-project-kb-v1";
+const API_BASE = "/api";
 
-const seedProjects = [
-  {
-    id: "pharma-servicedesk",
-    name: "ServiceDesk для фармацевтической сети",
-    client: "Ламода",
-    industry: "Фармацевтика",
-    platform: "ELMA",
-    product: "ServiceDesk",
-    features: [
-      {
-        name: "Регистрация и маршрутизация обращений аптечных точек",
-        analysisHours: 32,
-        developmentHours: 96,
-        testingHours: 28,
-        stack: "ELMA BPM, JavaScript, REST API"
-      },
-      {
-        name: "Интеграция с бухгалтерской учетной системой",
-        analysisHours: 40,
-        developmentHours: 120,
-        testingHours: 36,
-        stack: "C#, REST API, MS SQL"
-      },
-      {
-        name: "SLA-контроль заявок сервисной поддержки",
-        analysisHours: 24,
-        developmentHours: 72,
-        testingHours: 24,
-        stack: "ELMA BPM, JavaScript"
-      }
-    ]
-  },
-  {
-    id: "construction-crm",
-    name: "CRM для строительного холдинга",
-    client: "Технониколь",
-    industry: "Строительство",
-    platform: "Bitrix24",
-    product: "CRM",
-    features: [
-      {
-        name: "Воронка продаж объектов недвижимости",
-        analysisHours: 28,
-        developmentHours: 88,
-        testingHours: 24,
-        stack: "PHP, Bitrix24 REST, MySQL"
-      },
-      {
-        name: "Интеграция CRM с бухгалтерской системой",
-        analysisHours: 36,
-        developmentHours: 112,
-        testingHours: 32,
-        stack: "PHP, 1C API, REST"
-      },
-      {
-        name: "Аналитические отчеты для руководителя отдела продаж",
-        analysisHours: 30,
-        developmentHours: 80,
-        testingHours: 20,
-        stack: "JavaScript, SQL, BI connector"
-      }
-    ]
-  },
-  {
-    id: "refinery-call-center",
-    name: "Колл-центр для нефтеперерабатывающего предприятия",
-    client: "Газпромнефть",
-    industry: "Нефтепереработка",
-    platform: "BPMSoft",
-    product: "Колл-центр",
-    features: [
-      {
-        name: "Учет рабочего времени операторов колл-центра",
-        analysisHours: 26,
-        developmentHours: 76,
-        testingHours: 22,
-        stack: "C#, BPMSoft, PostgreSQL"
-      },
-      {
-        name: "Аналитические отчеты для руководителя колл-центра",
-        analysisHours: 34,
-        developmentHours: 92,
-        testingHours: 26,
-        stack: "C#, SQL, Power BI"
-      },
-      {
-        name: "Интеграция телефонии с карточкой обращения",
-        analysisHours: 30,
-        developmentHours: 108,
-        testingHours: 34,
-        stack: "C#, SIP, REST API"
-      }
-    ]
-  },
-  {
-    id: "bank-bpm",
-    name: "Автоматизация клиентских процессов банка",
-    client: "Газпромнефть",
-    industry: "Финансовые услуги",
-    platform: "ELMA",
-    product: "BPM",
-    features: [
-      {
-        name: "Согласование заявок на изменение клиентских лимитов",
-        analysisHours: 44,
-        developmentHours: 132,
-        testingHours: 40,
-        stack: "ELMA BPM, Java, Oracle"
-      },
-      {
-        name: "Интеграция с системой электронного архива",
-        analysisHours: 30,
-        developmentHours: 86,
-        testingHours: 24,
-        stack: "Java, SOAP, Oracle"
-      },
-      {
-        name: "Контроль сроков обработки клиентских обращений",
-        analysisHours: 22,
-        developmentHours: 64,
-        testingHours: 20,
-        stack: "ELMA BPM, JavaScript"
-      }
-    ]
-  },
-  {
-    id: "retail-helpdesk",
-    name: "HelpDesk для розничной сети",
-    client: "Ламода",
-    industry: "Ритейл",
-    platform: "Bitrix24",
-    product: "ServiceDesk",
-    features: [
-      {
-        name: "Классификация обращений магазинов по категориям",
-        analysisHours: 18,
-        developmentHours: 54,
-        testingHours: 16,
-        stack: "PHP, Bitrix24 REST"
-      },
-      {
-        name: "Учет времени работы сотрудников поддержки",
-        analysisHours: 20,
-        developmentHours: 58,
-        testingHours: 18,
-        stack: "PHP, JavaScript, MySQL"
-      },
-      {
-        name: "Дашборд качества обслуживания для руководителя",
-        analysisHours: 26,
-        developmentHours: 74,
-        testingHours: 20,
-        stack: "JavaScript, SQL"
-      }
-    ]
-  }
-];
-
-let projects = loadProjects();
+let projects = [];
 let sortMode = "score";
 
 const elements = {
@@ -192,46 +34,72 @@ const elements = {
   toast: document.querySelector("#toast")
 };
 
-function loadProjects() {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (!stored) {
-    return cloneData(seedProjects);
+async function apiRequest(path, options = {}) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {})
+    },
+    ...options
+  });
+
+  if (!response.ok) {
+    const message = await readErrorMessage(response);
+    throw new Error(message || `Ошибка API: ${response.status}`);
   }
 
+  if (response.status === 204) {
+    return null;
+  }
+
+  return response.json();
+}
+
+async function readErrorMessage(response) {
   try {
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed : cloneData(seedProjects);
+    const payload = await response.json();
+    if (Array.isArray(payload.detail)) {
+      return payload.detail.map((item) => item.msg).join("; ");
+    }
+    return payload.detail || payload.message || "";
   } catch {
-    return cloneData(seedProjects);
+    return response.statusText;
   }
 }
 
-function cloneData(value) {
-  if (typeof structuredClone === "function") {
-    return structuredClone(value);
-  }
-
-  return JSON.parse(JSON.stringify(value));
+function buildQuery(params) {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      search.set(key, value);
+    }
+  });
+  return search.toString() ? `?${search.toString()}` : "";
 }
 
-function saveProjects() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(projects, null, 2));
+async function loadProjects() {
+  projects = await apiRequest("/projects");
 }
 
-function normalize(value) {
-  return String(value || "")
-    .toLowerCase()
-    .replace(/ё/g, "е")
-    .replace(/[^a-zа-я0-9\s-]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+async function loadFilters() {
+  const filters = await apiRequest("/filters");
+  fillSelect(elements.clientFilter, filters.clients || [], "Все заказчики");
+  fillSelect(elements.industryFilter, filters.industries || [], "Все отрасли");
+  fillSelect(elements.platformFilter, filters.platforms || [], "Все платформы");
+  fillSelect(elements.productFilter, filters.products || [], "Все продукты");
+  fillSelect(elements.stackFilter, filters.stacks || [], "Любой стек");
 }
 
-function tokenize(value) {
-  return normalize(value)
-    .split(" ")
-    .map((token) => token.trim())
-    .filter((token) => token.length > 2);
+async function loadSearchRows() {
+  const query = buildQuery({
+    q: elements.searchInput.value,
+    client: elements.clientFilter.value,
+    industry: elements.industryFilter.value,
+    platform: elements.platformFilter.value,
+    product: elements.productFilter.value,
+    stack: elements.stackFilter.value
+  });
+  return apiRequest(`/features/search${query}`);
 }
 
 function getFeatureRows() {
@@ -249,54 +117,6 @@ function getFeatureRows() {
   );
 }
 
-function scoreFeature(query, feature) {
-  const queryTokens = tokenize(query);
-  const haystack = normalize(`${feature.name} ${feature.projectName} ${feature.client} ${feature.industry} ${feature.platform} ${feature.product} ${feature.stack}`);
-  const featureName = normalize(feature.name);
-
-  if (queryTokens.length === 0) {
-    return 100;
-  }
-
-  let score = 0;
-  for (const token of queryTokens) {
-    if (featureName.includes(token)) {
-      score += 75;
-    } else if (haystack.includes(token)) {
-      score += 52;
-    } else {
-      const fuzzyHit = haystack.split(" ").some((word) => isCloseToken(word, token));
-      if (fuzzyHit) {
-        score += 32;
-      }
-    }
-  }
-
-  const phraseBonus = featureName.includes(normalize(query)) ? 25 : 0;
-  const tokenScore = Math.round(score / queryTokens.length);
-  return Math.min(100, tokenScore + phraseBonus);
-}
-
-function isCloseToken(word, token) {
-  if (word.startsWith(token) || token.startsWith(word)) {
-    return true;
-  }
-
-  if (word.length > 5 && token.length > 5) {
-    return word.slice(0, 6) === token.slice(0, 6);
-  }
-
-  return false;
-}
-
-function uniqueValues(rows, key) {
-  return [...new Set(rows.map((row) => row[key]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ru"));
-}
-
-function stackValues(rows) {
-  return [...new Set(rows.flatMap((row) => splitStack(row.stack)))].sort((a, b) => a.localeCompare(b, "ru"));
-}
-
 function splitStack(stack) {
   return String(stack || "")
     .split(",")
@@ -312,30 +132,6 @@ function fillSelect(select, values, label) {
   select.value = values.includes(selected) ? selected : "";
 }
 
-function updateFilters() {
-  const rows = getFeatureRows();
-  fillSelect(elements.clientFilter, uniqueValues(rows, "client"), "Все заказчики");
-  fillSelect(elements.industryFilter, uniqueValues(rows, "industry"), "Все отрасли");
-  fillSelect(elements.platformFilter, uniqueValues(rows, "platform"), "Все платформы");
-  fillSelect(elements.productFilter, uniqueValues(rows, "product"), "Все продукты");
-  fillSelect(elements.stackFilter, stackValues(rows), "Любой стек");
-}
-
-function getFilteredRows() {
-  const query = elements.searchInput.value;
-  const minScore = Number(elements.scoreFilter.value);
-
-  return getFeatureRows()
-    .map((row) => ({ ...row, score: scoreFeature(query, row) }))
-    .filter((row) => !elements.clientFilter.value || row.client === elements.clientFilter.value)
-    .filter((row) => !elements.industryFilter.value || row.industry === elements.industryFilter.value)
-    .filter((row) => !elements.platformFilter.value || row.platform === elements.platformFilter.value)
-    .filter((row) => !elements.productFilter.value || row.product === elements.productFilter.value)
-    .filter((row) => !elements.stackFilter.value || splitStack(row.stack).includes(elements.stackFilter.value))
-    .filter((row) => row.score >= minScore)
-    .sort(sortRows);
-}
-
 function sortRows(a, b) {
   if (sortMode === "total") {
     return b.totalHours - a.totalHours || b.score - a.score;
@@ -348,38 +144,50 @@ function sortRows(a, b) {
   return b.score - a.score || b.totalHours - a.totalHours;
 }
 
-function renderResults() {
-  const rows = getFilteredRows();
+async function renderResults() {
   const query = elements.searchInput.value.trim();
+  const minScore = Number(elements.scoreFilter.value);
 
-  elements.resultsBody.innerHTML = "";
-  elements.emptyState.hidden = rows.length > 0;
-  elements.resultCount.textContent = formatCount(rows.length, ["совпадение", "совпадения", "совпадений"]);
-  elements.queryHint.textContent = query
-    ? `Запрос: "${query}". Таблица отсортирована по выбранному признаку.`
-    : "Показаны все функциональности. Для точного списка введите запрос.";
+  try {
+    const rows = (await loadSearchRows())
+      .filter((row) => row.score >= minScore)
+      .sort(sortRows);
 
-  const fragment = document.createDocumentFragment();
-  for (const row of rows) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td><strong>${escapeHtml(row.projectName)}</strong></td>
-      <td>${escapeHtml(row.client)}</td>
-      <td>${escapeHtml(row.industry)}</td>
-      <td>${escapeHtml(row.platform)}</td>
-      <td>${escapeHtml(row.product)}</td>
-      <td class="feature-name">${highlight(row.name, query)}</td>
-      <td>${row.analysisHours} ч</td>
-      <td>${row.developmentHours} ч</td>
-      <td>${row.testingHours} ч</td>
-      <td><strong>${row.totalHours} ч</strong></td>
-      <td><div class="stack-list">${splitStack(row.stack).map((stack) => `<span class="tag">${escapeHtml(stack)}</span>`).join("")}</div></td>
-      <td><span class="score-pill">${row.score}%</span></td>
-    `;
-    fragment.append(tr);
+    elements.resultsBody.innerHTML = "";
+    elements.emptyState.hidden = rows.length > 0;
+    elements.resultCount.textContent = formatCount(rows.length, ["совпадение", "совпадения", "совпадений"]);
+    elements.queryHint.textContent = query
+      ? `Запрос: "${query}". Таблица отсортирована по выбранному признаку.`
+      : "Показаны все функциональности. Для точного списка введите запрос.";
+
+    const fragment = document.createDocumentFragment();
+    for (const row of rows) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><strong>${escapeHtml(row.projectName)}</strong></td>
+        <td>${escapeHtml(row.client)}</td>
+        <td>${escapeHtml(row.industry)}</td>
+        <td>${escapeHtml(row.platform)}</td>
+        <td>${escapeHtml(row.product)}</td>
+        <td class="feature-name">${highlight(row.name, query)}</td>
+        <td>${row.analysisHours} ч</td>
+        <td>${row.developmentHours} ч</td>
+        <td>${row.testingHours} ч</td>
+        <td><strong>${row.totalHours} ч</strong></td>
+        <td><div class="stack-list">${splitStack(row.stack).map((stack) => `<span class="tag">${escapeHtml(stack)}</span>`).join("")}</div></td>
+        <td><span class="score-pill">${row.score}%</span></td>
+      `;
+      fragment.append(tr);
+    }
+
+    elements.resultsBody.append(fragment);
+  } catch (error) {
+    elements.resultsBody.innerHTML = "";
+    elements.emptyState.hidden = false;
+    elements.resultCount.textContent = "0 совпадений";
+    elements.queryHint.textContent = "Не удалось получить данные от API.";
+    showToast(error.message);
   }
-
-  elements.resultsBody.append(fragment);
 }
 
 function highlight(value, query) {
@@ -393,6 +201,22 @@ function highlight(value, query) {
     const safeToken = escapeRegExp(token);
     return html.replace(new RegExp(`(${safeToken})`, "gi"), "<mark>$1</mark>");
   }, escaped);
+}
+
+function normalize(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/ё/g, "е")
+    .replace(/[^a-zа-я0-9\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function tokenize(value) {
+  return normalize(value)
+    .split(" ")
+    .map((token) => token.trim())
+    .filter((token) => token.length > 2);
 }
 
 function escapeHtml(value) {
@@ -511,11 +335,10 @@ function collectFeatureRows() {
   }));
 }
 
-function handleSubmit(event) {
+async function handleSubmit(event) {
   event.preventDefault();
   const formData = new FormData(elements.projectForm);
   const newProject = {
-    id: window.crypto?.randomUUID ? window.crypto.randomUUID() : `project-${Date.now()}`,
     name: formData.get("projectName").trim(),
     client: formData.get("client").trim(),
     industry: formData.get("industry").trim(),
@@ -529,26 +352,37 @@ function handleSubmit(event) {
     return;
   }
 
-  projects.unshift(newProject);
-  saveProjects();
-  refreshAll();
-  elements.projectForm.reset();
-  elements.featureRows.innerHTML = "";
-  addFeatureRow();
-  switchTab("search");
-  elements.searchInput.value = newProject.features[0].name;
-  renderResults();
-  showToast("Проект добавлен в базу знаний.");
+  try {
+    await apiRequest("/projects", {
+      method: "POST",
+      body: JSON.stringify(newProject)
+    });
+    await refreshAll();
+    elements.projectForm.reset();
+    elements.featureRows.innerHTML = "";
+    addFeatureRow();
+    switchTab("search");
+    elements.searchInput.value = newProject.features[0].name;
+    await renderResults();
+    showToast("Проект добавлен в базу знаний.");
+  } catch (error) {
+    showToast(error.message);
+  }
 }
 
-function exportJson() {
-  const blob = new Blob([JSON.stringify(projects, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "projects-knowledge-base.json";
-  link.click();
-  URL.revokeObjectURL(url);
+async function exportJson() {
+  try {
+    const data = await apiRequest("/export");
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "projects-knowledge-base.json";
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    showToast(error.message);
+  }
 }
 
 function importJson(event) {
@@ -558,16 +392,18 @@ function importJson(event) {
   }
 
   const reader = new FileReader();
-  reader.onload = () => {
+  reader.onload = async () => {
     try {
       const imported = JSON.parse(reader.result);
       if (!Array.isArray(imported)) {
         throw new Error("JSON должен содержать массив проектов.");
       }
 
-      projects = imported.map(normalizeProject);
-      saveProjects();
-      refreshAll();
+      await apiRequest("/import", {
+        method: "POST",
+        body: JSON.stringify(imported)
+      });
+      await refreshAll();
       showToast("База знаний импортирована.");
     } catch (error) {
       showToast(`Ошибка импорта: ${error.message}`);
@@ -578,44 +414,19 @@ function importJson(event) {
   reader.readAsText(file);
 }
 
-function normalizeProject(project, index) {
-  if (!project.name || !project.industry || !project.platform || !project.product || !Array.isArray(project.features)) {
-    throw new Error(`Некорректный проект в позиции ${index + 1}.`);
-  }
-
-  return {
-    id: project.id || `project-${Date.now()}-${index}`,
-    name: String(project.name),
-    client: String(project.client || "Не указан"),
-    industry: String(project.industry),
-    platform: String(project.platform),
-    product: String(project.product),
-    features: project.features.map((feature, featureIndex) => {
-      if (!feature.name || !feature.stack) {
-        throw new Error(`Некорректная функциональность в проекте "${project.name}", строка ${featureIndex + 1}.`);
-      }
-
-      return {
-        name: String(feature.name),
-        analysisHours: Number(feature.analysisHours) || 0,
-        developmentHours: Number(feature.developmentHours) || 0,
-        testingHours: Number(feature.testingHours) || 0,
-        stack: String(feature.stack)
-      };
-    })
-  };
-}
-
-function resetData() {
-  const confirmed = confirm("Вернуть демо-данные? Текущие локальные изменения будут заменены.");
+async function resetData() {
+  const confirmed = confirm("Вернуть демо-данные? Текущие данные в базе будут заменены.");
   if (!confirmed) {
     return;
   }
 
-  projects = cloneData(seedProjects);
-  saveProjects();
-  refreshAll();
-  showToast("Демо-данные восстановлены.");
+  try {
+    await apiRequest("/reset-demo-data", { method: "POST" });
+    await refreshAll();
+    showToast("Демо-данные восстановлены.");
+  } catch (error) {
+    showToast(error.message);
+  }
 }
 
 function switchTab(tab) {
@@ -630,11 +441,23 @@ function showToast(message) {
   showToast.timeout = setTimeout(() => elements.toast.classList.remove("show"), 2800);
 }
 
-function refreshAll() {
-  updateFilters();
-  updateMetrics();
-  renderProjects();
-  renderResults();
+async function refreshAll() {
+  try {
+    await loadProjects();
+    await loadFilters();
+    updateMetrics();
+    renderProjects();
+    await renderResults();
+  } catch (error) {
+    projects = [];
+    updateMetrics();
+    renderProjects();
+    elements.resultsBody.innerHTML = "";
+    elements.emptyState.hidden = false;
+    elements.resultCount.textContent = "0 совпадений";
+    elements.queryHint.textContent = "API недоступен. Проверьте, что backend запущен.";
+    showToast(error.message);
+  }
 }
 
 function attachEvents() {

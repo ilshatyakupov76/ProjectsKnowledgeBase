@@ -1,0 +1,11 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+backend
+debug.log
+*.log
+README.md
+PROJECT_DESCRIPTION.md
+AGENTS.md

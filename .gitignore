@@ -11,7 +11,15 @@ build/
 
 # Environment files
 .env
-.env.*
+.env.local
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
 
 # Editor and OS files
 .vscode/
