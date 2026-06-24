@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>База знаний проектов интегратора</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=edit-delete-1">
 </head>
 <body>
   <div class="app-shell">
@@ -172,8 +172,8 @@
       <section class="tab-panel" id="addPanel" data-panel="add">
         <header class="topbar">
           <div>
-            <h2>Добавить проект</h2>
-            <p>Новая запись сохраняется в базе данных и сразу участвует в поиске.</p>
+            <h2 id="projectFormTitle">Добавить проект</h2>
+            <p id="projectFormHint">Новая запись сохраняется в базе данных и сразу участвует в поиске.</p>
           </div>
         </header>
 
@@ -215,13 +215,14 @@
           </div>
 
           <div class="form-actions">
-            <button class="primary-button" type="submit">
+            <button class="primary-button" type="submit" id="saveProjectBtn">
               <span class="icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
               </span>
-              Сохранить
+              <span id="saveProjectLabel">Сохранить</span>
             </button>
-            <button class="secondary-button" type="reset">Очистить</button>
+            <button class="secondary-button" type="button" id="resetFormBtn">Очистить</button>
+            <button class="secondary-button" type="button" id="cancelEditBtn" hidden>Отменить редактирование</button>
           </div>
         </form>
       </section>
@@ -258,6 +259,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=edit-delete-1"></script>
 </body>
 </html>

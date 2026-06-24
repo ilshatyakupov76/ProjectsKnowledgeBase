@@ -126,6 +126,8 @@ Minimum verification for backend/database changes:
 - PostgreSQL contains expected tables, including `projects`, `features`, and `alembic_version`.
 - Seed data loads on an empty database.
 - Adding a project through the UI or `POST /api/projects` writes to PostgreSQL.
+- Editing a project through the UI or `PUT /api/projects/{project_id}` updates PostgreSQL.
+- Deleting a project through the UI or `DELETE /api/projects/{project_id}` removes it and its features from PostgreSQL.
 - Data remains after `docker compose restart` or container recreation without `-v`.
 - Search works by approximate feature name and customer.
 - Filters work by customer, industry, platform, product, and stack.
@@ -187,7 +189,10 @@ Frontend smoke check:
 - Approximate search scores tokens across feature name, project name, customer, industry, platform, product, and stack.
 - Filters currently use exact values returned by `/api/filters`.
 - `POST /api/projects` creates a project and nested features in PostgreSQL.
+- `PUT /api/projects/{project_id}` updates the project and replaces its nested feature list.
+- `DELETE /api/projects/{project_id}` deletes the project; related features are removed through cascade/delete-orphan behavior.
 - `POST /api/import` replaces all projects and features.
 - `POST /api/reset-demo-data` replaces all data with demo data.
 - The backend Docker build may hit unstable PyPI/DNS behavior on Docker Desktop. The project supports an optional local `backend/.wheels` cache; downloaded `.whl` files are ignored by git.
+- Frontend static files use versioned asset URLs and `Cache-Control: no-store` to avoid stale browser cache after Docker rebuilds.
 - `docker compose down -v` deletes the PostgreSQL volume and fully resets stored data.

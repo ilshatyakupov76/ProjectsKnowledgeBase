@@ -536,6 +536,13 @@ mark {
   font-size: 20px;
 }
 
+.project-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 10px;
+}
+
 .feature-list {
   display: grid;
 }
@@ -732,6 +739,10 @@ mark {
   .project-total,
   .feature-hours {
     text-align: left;
+  }
+
+  .project-actions {
+    justify-content: flex-start;
   }
 
   .project-summary,

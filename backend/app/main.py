@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
@@ -12,11 +12,13 @@ from app.schemas import ProjectPayload
 from app.search import score_feature
 from app.service import (
     create_project,
+    delete_project,
     feature_row_to_public,
     list_projects,
     project_to_public,
     replace_projects,
     split_stack,
+    update_project,
 )
 
 settings = get_settings()
@@ -45,6 +47,24 @@ def get_projects(db: Annotated[Session, Depends(get_db)]) -> list[dict[str, obje
 def post_project(payload: ProjectPayload, db: Annotated[Session, Depends(get_db)]) -> dict[str, object]:
     project = create_project(db, payload.model_dump())
     return project_to_public(project)
+
+
+@app.put("/api/projects/{project_id}")
+def put_project(project_id: str, payload: ProjectPayload, db: Annotated[Session, Depends(get_db)]) -> dict[str, object]:
+    project = db.get(Project, project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Проект не найден.")
+    project = update_project(db, project, payload.model_dump())
+    return project_to_public(project)
+
+
+@app.delete("/api/projects/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_project(project_id: str, db: Annotated[Session, Depends(get_db)]) -> Response:
+    project = db.get(Project, project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Проект не найден.")
+    delete_project(db, project)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.get("/api/filters")
@@ -109,7 +129,7 @@ def reset_demo_data(db: Annotated[Session, Depends(get_db)]) -> list[dict[str, o
 
 
 @app.get("/api/projects/{project_id}")
-def get_project(project_id: str, db: Annotated[Session, Depends(get_db)]) -> dict[str, object]:
+def get_project_by_id(project_id: str, db: Annotated[Session, Depends(get_db)]) -> dict[str, object]:
     project = db.get(Project, project_id)
     if project is None:
         raise HTTPException(status_code=404, detail="Проект не найден.")

@@ -64,16 +64,8 @@ def feature_row_to_public(project: Project, feature: Feature) -> dict[str, objec
     }
 
 
-def create_project(db: Session, payload: dict[str, object], commit: bool = True) -> Project:
-    project = Project(
-        id=str(payload.get("id") or uuid4()),
-        name=str(payload["name"]).strip(),
-        client=str(payload.get("client") or "Не указан").strip(),
-        industry=str(payload["industry"]).strip(),
-        platform=str(payload["platform"]).strip(),
-        product=str(payload["product"]).strip(),
-    )
-    project.features = [
+def build_features(payload: dict[str, object]) -> list[Feature]:
+    return [
         Feature(
             name=str(feature["name"]).strip(),
             analysis_hours=int(feature.get("analysisHours") or 0),
@@ -83,11 +75,40 @@ def create_project(db: Session, payload: dict[str, object], commit: bool = True)
         )
         for feature in payload["features"]
     ]
+
+
+def apply_project_payload(project: Project, payload: dict[str, object]) -> Project:
+    project.name = str(payload["name"]).strip()
+    project.client = str(payload.get("client") or "Не указан").strip()
+    project.industry = str(payload["industry"]).strip()
+    project.platform = str(payload["platform"]).strip()
+    project.product = str(payload["product"]).strip()
+    project.features = build_features(payload)
+    return project
+
+
+def create_project(db: Session, payload: dict[str, object], commit: bool = True) -> Project:
+    project = Project(
+        id=str(payload.get("id") or uuid4()),
+    )
+    apply_project_payload(project, payload)
     db.add(project)
     if commit:
         db.commit()
         db.refresh(project)
     return project
+
+
+def update_project(db: Session, project: Project, payload: dict[str, object]) -> Project:
+    apply_project_payload(project, payload)
+    db.commit()
+    db.refresh(project)
+    return project
+
+
+def delete_project(db: Session, project: Project) -> None:
+    db.delete(project)
+    db.commit()
 
 
 def replace_projects(db: Session, payloads: list[dict[str, object]]) -> list[Project]:

@@ -2,6 +2,7 @@ const API_BASE = "/api";
 
 let projects = [];
 let sortMode = "score";
+let editingProjectId = null;
 
 const elements = {
   tabs: document.querySelectorAll(".nav-tab"),
@@ -24,10 +25,15 @@ const elements = {
   emptyState: document.querySelector("#emptyState"),
   sortButtons: document.querySelectorAll(".segment"),
   projectsList: document.querySelector("#projectsList"),
+  projectFormTitle: document.querySelector("#projectFormTitle"),
+  projectFormHint: document.querySelector("#projectFormHint"),
   projectForm: document.querySelector("#projectForm"),
   featureRows: document.querySelector("#featureRows"),
   featureRowTemplate: document.querySelector("#featureRowTemplate"),
   addFeatureBtn: document.querySelector("#addFeatureBtn"),
+  saveProjectLabel: document.querySelector("#saveProjectLabel"),
+  resetFormBtn: document.querySelector("#resetFormBtn"),
+  cancelEditBtn: document.querySelector("#cancelEditBtn"),
   exportBtn: document.querySelector("#exportBtn"),
   importInput: document.querySelector("#importInput"),
   resetBtn: document.querySelector("#resetBtn"),
@@ -280,6 +286,14 @@ function renderProjects() {
         <div class="project-total">
           <strong>${total} ч</strong>
           ${formatCount(project.features.length, ["функциональность", "функциональности", "функциональностей"])}
+          <div class="project-actions">
+            <button class="icon-button edit-project" type="button" title="Редактировать проект" aria-label="Редактировать проект">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </button>
+            <button class="icon-button danger-soft delete-project" type="button" title="Удалить проект" aria-label="Удалить проект">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+            </button>
+          </div>
         </div>
       </div>
       <div class="feature-list">
@@ -302,6 +316,8 @@ function renderProjects() {
         }).join("")}
       </div>
     `;
+    card.querySelector(".edit-project").addEventListener("click", () => startEditProject(project.id));
+    card.querySelector(".delete-project").addEventListener("click", () => deleteProject(project.id));
     fragment.append(card);
   }
 
@@ -335,10 +351,9 @@ function collectFeatureRows() {
   }));
 }
 
-async function handleSubmit(event) {
-  event.preventDefault();
+function buildProjectPayload() {
   const formData = new FormData(elements.projectForm);
-  const newProject = {
+  return {
     name: formData.get("projectName").trim(),
     client: formData.get("client").trim(),
     industry: formData.get("industry").trim(),
@@ -346,25 +361,107 @@ async function handleSubmit(event) {
     product: formData.get("product").trim(),
     features: collectFeatureRows()
   };
+}
 
-  if (newProject.features.some((feature) => !feature.name || !feature.stack)) {
+function setProjectFormMode(project = null) {
+  editingProjectId = project?.id || null;
+  elements.projectFormTitle.textContent = project ? "Редактировать проект" : "Добавить проект";
+  elements.projectFormHint.textContent = project
+    ? "Изменения сохраняются в базе данных и сразу обновляют поиск, фильтры и экспорт."
+    : "Новая запись сохраняется в базе данных и сразу участвует в поиске.";
+  elements.saveProjectLabel.textContent = project ? "Сохранить изменения" : "Сохранить";
+  elements.cancelEditBtn.hidden = !project;
+}
+
+function resetProjectForm() {
+  elements.projectForm.reset();
+  elements.featureRows.innerHTML = "";
+  addFeatureRow();
+  setProjectFormMode();
+}
+
+function fillProjectForm(project) {
+  elements.projectForm.elements.projectName.value = project.name;
+  elements.projectForm.elements.client.value = project.client || "";
+  elements.projectForm.elements.industry.value = project.industry;
+  elements.projectForm.elements.platform.value = project.platform;
+  elements.projectForm.elements.product.value = project.product;
+  elements.featureRows.innerHTML = "";
+  project.features.forEach((feature) => addFeatureRow(feature));
+  setProjectFormMode(project);
+}
+
+function startEditProject(projectId) {
+  const project = projects.find((item) => item.id === projectId);
+  if (!project) {
+    showToast("Проект не найден.");
+    return;
+  }
+
+  fillProjectForm(project);
+  switchTab("add");
+  elements.projectForm.elements.projectName.focus();
+}
+
+async function deleteProject(projectId) {
+  const project = projects.find((item) => item.id === projectId);
+  if (!project) {
+    showToast("Проект не найден.");
+    return;
+  }
+
+  const confirmed = confirm(`Удалить проект "${project.name}" и все его функциональности?`);
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await apiRequest(`/projects/${encodeURIComponent(projectId)}`, { method: "DELETE" });
+    if (editingProjectId === projectId) {
+      resetProjectForm();
+    }
+    await refreshAll();
+    showToast("Проект удален из базы знаний.");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function handleSubmit(event) {
+  event.preventDefault();
+  const projectPayload = buildProjectPayload();
+
+  if (projectPayload.features.some((feature) => !feature.name || !feature.stack)) {
     showToast("Заполните название и стек для каждой функциональности.");
     return;
   }
 
   try {
-    await apiRequest("/projects", {
-      method: "POST",
-      body: JSON.stringify(newProject)
-    });
+    if (editingProjectId) {
+      await apiRequest(`/projects/${encodeURIComponent(editingProjectId)}`, {
+        method: "PUT",
+        body: JSON.stringify(projectPayload)
+      });
+    } else {
+      await apiRequest("/projects", {
+        method: "POST",
+        body: JSON.stringify(projectPayload)
+      });
+    }
+
+    const wasEditing = Boolean(editingProjectId);
     await refreshAll();
-    elements.projectForm.reset();
-    elements.featureRows.innerHTML = "";
-    addFeatureRow();
-    switchTab("search");
-    elements.searchInput.value = newProject.features[0].name;
-    await renderResults();
-    showToast("Проект добавлен в базу знаний.");
+    resetProjectForm();
+
+    if (wasEditing) {
+      switchTab("projects");
+      showToast("Проект обновлен в базе знаний.");
+    } else {
+      switchTab("search");
+      elements.searchInput.value = projectPayload.features[0].name;
+      await renderResults();
+      showToast("Проект добавлен в базу знаний.");
+    }
   } catch (error) {
     showToast(error.message);
   }
@@ -422,6 +519,7 @@ async function resetData() {
 
   try {
     await apiRequest("/reset-demo-data", { method: "POST" });
+    resetProjectForm();
     await refreshAll();
     showToast("Демо-данные восстановлены.");
   } catch (error) {
@@ -490,6 +588,8 @@ function attachEvents() {
 
   elements.addFeatureBtn.addEventListener("click", () => addFeatureRow());
   elements.projectForm.addEventListener("submit", handleSubmit);
+  elements.resetFormBtn.addEventListener("click", resetProjectForm);
+  elements.cancelEditBtn.addEventListener("click", resetProjectForm);
   elements.exportBtn.addEventListener("click", exportJson);
   elements.importInput.addEventListener("change", importJson);
   elements.resetBtn.addEventListener("click", resetData);
